@@ -24,6 +24,15 @@ export default function Scanner({ onDecode, disabled }: ScannerProps) {
     };
   }, []);
 
+  // Keep the scanner-gun input focused and ready whenever it's usable — a Bluetooth/USB
+  // scanner gun pairs as a keyboard, so it can only "type" a scan into whichever element
+  // currently has focus. This re-focuses on mount and every time a pending scan is resolved.
+  useEffect(() => {
+    if (!disabled) {
+      manualInputRef.current?.focus();
+    }
+  }, [disabled]);
+
   async function startCamera() {
     setError(null);
     try {
@@ -86,22 +95,13 @@ export default function Scanner({ onDecode, disabled }: ScannerProps) {
 
   return (
     <div className="scanner">
-      <div className="scanner-camera-block">
-        <div id={SCANNER_ELEMENT_ID} className={cameraOn ? 'scanner-viewport active' : 'scanner-viewport'} />
-        {!cameraOn ? (
-          <button type="button" className="btn btn-primary" onClick={startCamera} disabled={disabled}>
-            Start Camera Scan
-          </button>
-        ) : (
-          <button type="button" className="btn btn-secondary" onClick={stopCamera}>
-            Stop Camera
-          </button>
-        )}
-        {error && <p className="scanner-error">{error}</p>}
-      </div>
-
-      <form className="scanner-manual" onSubmit={submitManual}>
-        <label htmlFor="manual-serial">Manual entry / hardware scanner input</label>
+      <form className="scanner-manual scanner-gun" onSubmit={submitManual}>
+        <h3>Bluetooth / USB Scanner Gun</h3>
+        <ol className="scanner-gun-steps">
+          <li>Pair the scanner in your device's Bluetooth settings first (it connects as a wireless keyboard, not through this app).</li>
+          <li>Tap the box below once so it's focused, then start scanning — each trigger pull types the code and submits it automatically.</li>
+        </ol>
+        <label htmlFor="manual-serial">Scan gun input</label>
         <div className="scanner-manual-row">
           <input
             id="manual-serial"
@@ -109,7 +109,8 @@ export default function Scanner({ onDecode, disabled }: ScannerProps) {
             type="text"
             inputMode="text"
             autoComplete="off"
-            placeholder="Scan with USB/Bluetooth scanner or type serial number"
+            autoFocus
+            placeholder="Tap here, then pull the trigger — or type a serial number"
             value={manualValue}
             onChange={(e) => setManualValue(e.target.value)}
             disabled={disabled}
@@ -119,10 +120,26 @@ export default function Scanner({ onDecode, disabled }: ScannerProps) {
           </button>
         </div>
         <p className="hint">
-          A USB or Bluetooth barcode scanner types into this field automatically (it behaves like a
-          keyboard) — just click into it and start scanning, no camera needed.
+          Browsers can't detect Bluetooth pairing status directly, so there's no "connected" indicator here —
+          if scans aren't appearing, re-tap the box above to make sure it still has focus.
         </p>
       </form>
+
+      <div className="scanner-camera-block">
+        <h3>Camera Scan</h3>
+        <p className="hint">No scanner gun handy? Use your phone or tablet's camera instead.</p>
+        <div id={SCANNER_ELEMENT_ID} className={cameraOn ? 'scanner-viewport active' : 'scanner-viewport'} />
+        {!cameraOn ? (
+          <button type="button" className="btn btn-secondary" onClick={startCamera} disabled={disabled}>
+            Start Camera Scan
+          </button>
+        ) : (
+          <button type="button" className="btn btn-secondary" onClick={stopCamera}>
+            Stop Camera
+          </button>
+        )}
+        {error && <p className="scanner-error">{error}</p>}
+      </div>
     </div>
   );
 }

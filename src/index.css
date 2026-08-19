@@ -256,6 +256,23 @@ textarea {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.scanner-gun {
+  border-color: var(--green);
+  border-width: 2px;
+}
+
+.scanner-gun-steps {
+  margin: 0 0 0.5rem;
+  padding-left: 1.2rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.scanner-gun-steps li {
+  margin-bottom: 0.2rem;
 }
 
 .scanner-manual-row {
@@ -265,6 +282,8 @@ textarea {
 
 .scanner-manual-row input {
   flex: 1;
+  font-size: 1.1rem;
+  padding: 0.85rem 0.9rem;
 }
 
 .warning-card {

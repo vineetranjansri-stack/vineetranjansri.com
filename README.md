@@ -35,14 +35,20 @@ local storage as you go, so an accidental page refresh doesn't lose the count. U
 Two scanning methods are supported side by side in the Scan tab — pick whichever fits
 the floor:
 
+- **Bluetooth / USB scanner gun** — pair the handheld scanner in the device's Bluetooth
+  settings first (it connects as a wireless keyboard, not through the app itself), then
+  tap the "Scan gun input" box once so it's focused. Each trigger pull types the code
+  and submits it automatically — no "Add" click needed. This is the recommended method
+  for continuous high-volume counting: faster and more reliable than camera scanning,
+  and it's what the app auto-focuses and re-focuses after every scan is classified so
+  the gun keeps working hands-free. The same box also accepts hand-typed serials or a
+  paste. Browsers have no API to report Bluetooth HID pairing/connection status, so
+  there's intentionally no "connected" indicator — if scans stop registering, it almost
+  always means the box lost focus (re-tap it).
 - **Phone/tablet camera** — tap "Start Camera Scan" to scan a panel's barcode or QR
   code directly with the device camera (supports Code128, EAN-13/8, Code39, UPC-A/E,
-  ITF, Codabar, and QR). No extra hardware needed.
-- **Dedicated USB/Bluetooth barcode scanner, or manual typing** — the "Manual entry"
-  field doubles as the input for a handheld scanner: those devices act like a keyboard,
-  so scanning into that focused field is just as fast as camera scanning and more
-  reliable for continuous high-volume counting. The same field also accepts hand-typed
-  serials or a paste.
+  ITF, Codabar, and QR). No extra hardware needed; a fallback when no scanner gun is on
+  hand.
 
 Both methods feed the same duplicate-check and classify (Intact/Damaged) flow.
 
