@@ -273,6 +273,23 @@ textarea {
   font-size: 0.85rem;
 }
 
+.scanner-upload-block {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  margin-top: 1rem;
+}
+
+.file-scanner-hidden {
+  position: fixed;
+  top: -9999px;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 .scanner-manual {
   background: var(--card-bg);
   border: 1px solid var(--border);
@@ -311,6 +328,15 @@ textarea {
 .warning-card {
   background: var(--amber-light);
   border-color: #e6c46b;
+}
+
+.queue-card {
+  background: var(--green-light);
+  border-color: var(--green);
+}
+
+.queue-card p {
+  margin: 0.25rem 0;
 }
 
 .classify-card {

@@ -27,6 +27,8 @@ export default function ScanTab({ panels, dispatch, onAddPanel, onUpdatePanel, o
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [lastSavedId, setLastSavedId] = useState<string | null>(null);
+  const [decodeQueue, setDecodeQueue] = useState<string[]>([]);
+  const [failedFileNames, setFailedFileNames] = useState<string[]>([]);
   const pendingCardRef = useRef<HTMLDivElement>(null);
 
   // A scan can land below the fold on a small phone screen once the scanner-gun and
@@ -37,6 +39,23 @@ export default function ScanTab({ panels, dispatch, onAddPanel, onUpdatePanel, o
       pendingCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [pendingSerial]);
+
+  // Drain the photo-upload decode queue one item at a time, only once nothing is
+  // currently awaiting classification — reuses the exact same duplicate-check/classify
+  // flow as a live scan for each queued serial.
+  useEffect(() => {
+    if (!pendingSerial && decodeQueue.length > 0) {
+      const [next, ...rest] = decodeQueue;
+      setDecodeQueue(rest);
+      handleDecode(next);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingSerial, decodeQueue]);
+
+  function handleBatchDecoded(serials: string[], failed: string[]) {
+    if (serials.length > 0) setDecodeQueue((q) => [...q, ...serials]);
+    if (failed.length > 0) setFailedFileNames((f) => [...f, ...failed]);
+  }
 
   const bySerial = useMemo(() => {
     const map = new Map<string, ScannedPanel>();
@@ -161,7 +180,26 @@ export default function ScanTab({ panels, dispatch, onAddPanel, onUpdatePanel, o
         </div>
       </div>
 
-      <Scanner onDecode={handleDecode} disabled={pendingSerial !== null && !duplicateOf} />
+      <Scanner onDecode={handleDecode} onBatchDecoded={handleBatchDecoded} disabled={pendingSerial !== null && !duplicateOf} />
+
+      {(decodeQueue.length > 0 || failedFileNames.length > 0) && (
+        <div className="card queue-card">
+          {decodeQueue.length > 0 && (
+            <p>
+              {decodeQueue.length} photo{decodeQueue.length === 1 ? '' : 's'} queued — classify the current one
+              to move to the next.
+            </p>
+          )}
+          {failedFileNames.length > 0 && (
+            <p className="scanner-error">
+              Couldn't read a barcode from: {failedFileNames.join(', ')} — enter {failedFileNames.length === 1 ? 'it' : 'them'} manually.{' '}
+              <button type="button" className="btn btn-outline btn-sm" onClick={() => setFailedFileNames([])}>
+                Dismiss
+              </button>
+            </p>
+          )}
+        </div>
+      )}
 
       <div ref={pendingCardRef}>
       {duplicateOf && (

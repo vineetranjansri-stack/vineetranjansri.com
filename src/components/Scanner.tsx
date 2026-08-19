@@ -2,18 +2,37 @@ import { useEffect, useRef, useState } from 'react';
 import type { Html5Qrcode as Html5QrcodeType } from 'html5-qrcode';
 
 const SCANNER_ELEMENT_ID = 'camera-scanner-viewport';
+const FILE_SCANNER_ELEMENT_ID = 'photo-scanner-viewport';
+
+async function loadFormats() {
+  const { Html5QrcodeSupportedFormats } = await import('html5-qrcode');
+  return [
+    Html5QrcodeSupportedFormats.QR_CODE,
+    Html5QrcodeSupportedFormats.CODE_128,
+    Html5QrcodeSupportedFormats.CODE_39,
+    Html5QrcodeSupportedFormats.EAN_13,
+    Html5QrcodeSupportedFormats.EAN_8,
+    Html5QrcodeSupportedFormats.UPC_A,
+    Html5QrcodeSupportedFormats.UPC_E,
+    Html5QrcodeSupportedFormats.ITF,
+    Html5QrcodeSupportedFormats.CODABAR,
+  ];
+}
 
 interface ScannerProps {
   onDecode: (value: string) => void;
+  onBatchDecoded: (serials: string[], failedFileNames: string[]) => void;
   disabled?: boolean;
 }
 
-export default function Scanner({ onDecode, disabled }: ScannerProps) {
+export default function Scanner({ onDecode, onBatchDecoded, disabled }: ScannerProps) {
   const scannerRef = useRef<Html5QrcodeType | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [manualValue, setManualValue] = useState('');
   const manualInputRef = useRef<HTMLInputElement>(null);
+  const [decodingFiles, setDecodingFiles] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -52,18 +71,8 @@ export default function Scanner({ onDecode, disabled }: ScannerProps) {
   async function startCamera() {
     setError(null);
     try {
-      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
-      const formats = [
-        Html5QrcodeSupportedFormats.QR_CODE,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.ITF,
-        Html5QrcodeSupportedFormats.CODABAR,
-      ];
+      const { Html5Qrcode } = await import('html5-qrcode');
+      const formats = await loadFormats();
       const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID, {
         formatsToSupport: formats,
         verbose: false,
@@ -98,6 +107,35 @@ export default function Scanner({ onDecode, disabled }: ScannerProps) {
     }
     scannerRef.current = null;
     setCameraOn(false);
+  }
+
+  async function handlePhotoFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    e.target.value = '';
+    if (files.length === 0) return;
+    setFileError(null);
+    setDecodingFiles(true);
+    const decoded: string[] = [];
+    const failed: string[] = [];
+    try {
+      const { Html5Qrcode } = await import('html5-qrcode');
+      const formats = await loadFormats();
+      for (const file of files) {
+        try {
+          const scanner = new Html5Qrcode(FILE_SCANNER_ELEMENT_ID, { formatsToSupport: formats, verbose: false });
+          const result = await scanner.scanFile(file, false);
+          decoded.push(result.trim());
+          scanner.clear();
+        } catch {
+          failed.push(file.name);
+        }
+      }
+    } catch (err) {
+      setFileError(err instanceof Error ? err.message : 'Could not read those photos.');
+    } finally {
+      setDecodingFiles(false);
+      onBatchDecoded(decoded, failed);
+    }
   }
 
   function submitManual(e: React.FormEvent) {
@@ -155,6 +193,24 @@ export default function Scanner({ onDecode, disabled }: ScannerProps) {
           </button>
         )}
         {error && <p className="scanner-error">{error}</p>}
+      </div>
+
+      <div className="scanner-upload-block">
+        <h3>Upload Photo(s) of Barcode</h3>
+        <p className="hint">
+          Already have photos with the panel's barcode/QR label visible? Upload one or several — each is
+          decoded and queued for you to classify Intact/Damaged one at a time, same as a live scan.
+        </p>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handlePhotoFilesSelected}
+          disabled={decodingFiles}
+        />
+        {decodingFiles && <p className="hint">Reading barcodes from photo(s)…</p>}
+        {fileError && <p className="scanner-error">{fileError}</p>}
+        <div id={FILE_SCANNER_ELEMENT_ID} className="file-scanner-hidden" />
       </div>
     </div>
   );

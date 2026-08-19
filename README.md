@@ -63,7 +63,7 @@ currently on that device, so export first if you need to keep it.
 
 ## How counting is carried out
 
-Two scanning methods are supported side by side in the Scan tab — pick whichever fits
+Three scanning methods are supported side by side in the Scan tab — pick whichever fits
 the floor:
 
 - **Bluetooth / USB scanner gun** — pair the handheld scanner in the device's Bluetooth
@@ -80,8 +80,14 @@ the floor:
   code directly with the device camera (supports Code128, EAN-13/8, Code39, UPC-A/E,
   ITF, Codabar, and QR). No extra hardware needed; a fallback when no scanner gun is on
   hand.
+- **Upload photo(s) of a barcode** — already have photos where the panel's barcode/QR
+  label is visible (taken earlier, sent by someone else, etc.)? Upload one or several at
+  once under "Upload Photo(s) of Barcode" and each is decoded from the still image and
+  queued — classify the current one Intact/Damaged and the next queued photo's result
+  comes up automatically, same flow as a live scan. Photos a barcode can't be read from
+  are listed so you can enter those serials manually instead.
 
-Both methods feed the same duplicate-check and classify (Intact/Damaged) flow.
+All three feed the same duplicate-check and classify (Intact/Damaged) flow.
 
 ## Getting started
 
