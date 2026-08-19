@@ -1,4 +1,5 @@
-import type { DispatchRecord, ScannedPanel } from '../types';
+import type { DispatchRecord, DispatchSheet, ScannedPanel } from '../types';
+import { buildDispatchIndex, normalizeSerial } from '../types';
 
 export interface ParsedWorkbook {
   headers: string[];
@@ -37,16 +38,23 @@ function fmtTime(iso: string): string {
   return new Date(iso).toLocaleString();
 }
 
-export function panelRows(panels: ScannedPanel[]): Record<string, unknown>[] {
-  return panels.map((p, i) => ({
-    'Sr. No.': i + 1,
-    'Serial Number': p.serial,
-    Status: p.status === 'intact' ? 'Intact' : 'Damaged',
-    'Defect Type': p.defectType ?? '',
-    Notes: p.notes ?? '',
-    'Has Photo': p.photo ? 'Yes' : 'No',
-    'Scanned At': fmtTime(p.scannedAt),
-  }));
+export function panelRows(
+  panels: ScannedPanel[],
+  dispatchIndex?: Map<string, DispatchRecord>,
+): Record<string, unknown>[] {
+  return panels.map((p, i) => {
+    const matched = dispatchIndex?.get(normalizeSerial(p.serial));
+    return {
+      ...(matched?.row ?? {}),
+      'Sr. No.': i + 1,
+      'Serial Number': p.serial,
+      Status: p.status === 'intact' ? 'Intact' : 'Damaged',
+      'Defect Type': p.defectType ?? '',
+      Notes: p.notes ?? '',
+      'Has Photo': p.photo ? 'Yes' : 'No',
+      'Scanned At': fmtTime(p.scannedAt),
+    };
+  });
 }
 
 export function missingRows(records: DispatchRecord[]): Record<string, unknown>[] {
@@ -57,11 +65,16 @@ export function missingRows(records: DispatchRecord[]): Record<string, unknown>[
   }));
 }
 
-export function exportPanelsSheet(panels: ScannedPanel[], status: 'intact' | 'damaged', sessionName: string) {
+export function exportPanelsSheet(
+  panels: ScannedPanel[],
+  status: 'intact' | 'damaged',
+  sessionName: string,
+  dispatch?: DispatchSheet | null,
+) {
   const filtered = panels.filter((p) => p.status === status);
   const label = status === 'intact' ? 'Intact_Panels' : 'Damaged_Panels';
   void downloadWorkbook(
-    [{ name: label, rows: panelRows(filtered) }],
+    [{ name: label, rows: panelRows(filtered, buildDispatchIndex(dispatch ?? null)) }],
     `${sessionName || 'session'}_${label}.xlsx`,
   );
 }
@@ -74,14 +87,16 @@ export function exportFullReport(params: {
   matchedDamaged: ScannedPanel[];
   extra: ScannedPanel[];
   missing: DispatchRecord[];
+  dispatch?: DispatchSheet | null;
 }) {
-  const { sessionName, summaryRows, matchedIntact, matchedDamaged, extra, missing } = params;
+  const { sessionName, summaryRows, matchedIntact, matchedDamaged, extra, missing, dispatch } = params;
+  const dispatchIndex = buildDispatchIndex(dispatch ?? null);
   void downloadWorkbook(
     [
       { name: 'Summary', rows: summaryRows },
-      { name: 'Intact_Panels', rows: panelRows(matchedIntact) },
-      { name: 'Damaged_Panels', rows: panelRows(matchedDamaged) },
-      { name: 'Extra_Not_In_Dispatch', rows: panelRows(extra) },
+      { name: 'Intact_Panels', rows: panelRows(matchedIntact, dispatchIndex) },
+      { name: 'Damaged_Panels', rows: panelRows(matchedDamaged, dispatchIndex) },
+      { name: 'Extra_Not_In_Dispatch', rows: panelRows(extra, dispatchIndex) },
       { name: 'Missing_Not_Scanned', rows: missingRows(missing) },
     ],
     `${sessionName || 'session'}_Full_Report.xlsx`,

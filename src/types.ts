@@ -62,3 +62,12 @@ export interface ReconciliationResult {
 export function normalizeSerial(serial: string): string {
   return serial.trim().toUpperCase();
 }
+
+export function buildDispatchIndex(dispatch: DispatchSheet | null): Map<string, DispatchRecord> {
+  const map = new Map<string, DispatchRecord>();
+  if (!dispatch) return map;
+  for (const record of dispatch.records) {
+    map.set(normalizeSerial(record.serial), record);
+  }
+  return map;
+}

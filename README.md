@@ -20,12 +20,19 @@ one-time `npm install`.
    thumbnail to view the full-size photo, and export the **Intact** or **Damaged**
    panels as standalone `.xlsx` sheets (with serial numbers, status, defect details, and
    timestamps).
-4. **Upload the supplier dispatch sheet** (Dispatch & Reconciliation tab) — upload the
-   supplier's `.xlsx`/`.csv`, pick which column holds the serial number (auto-guessed
-   from the header), and the app reconciles it against what was scanned:
+4. **Upload the supplier dispatch/loading sheet** (Dispatch & Reconciliation tab) —
+   upload the supplier's `.xlsx`/`.csv`, pick which column holds the serial number
+   (auto-guessed from the header), and the app reconciles it against what was scanned:
    - **Matched Intact** / **Matched Damaged** — dispatched and accounted for
    - **Missing** — dispatched per the supplier sheet but never scanned (lost/short-shipped)
    - **Extra** — scanned but not on the dispatch sheet (miscount or wrong consignment)
+
+   Once a sheet is loaded, its other columns (model, wattage, box number — whatever the
+   supplier included) follow the serial number everywhere: live under the Scan tab the
+   moment a panel is scanned (with an immediate "not found in dispatch sheet" warning if
+   it doesn't match — catches a wrong-consignment scan on the spot), as an expandable
+   "Dispatch Details" row per panel in the Inventory tab, and merged into the exported
+   Intact/Damaged/Extra `.xlsx` sheets.
 5. **Summary report** (Summary tab) — totals, damage rate, defect-type breakdown, and a
    one-click **Export Full Report (.xlsx)** with Summary / Intact / Damaged /
    Extra / Missing as separate sheets in one workbook.

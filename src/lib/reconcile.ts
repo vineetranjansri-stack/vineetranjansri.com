@@ -1,12 +1,12 @@
 import type { DispatchSheet, ReconciliationResult, ScannedPanel } from '../types';
-import { normalizeSerial } from '../types';
+import { buildDispatchIndex, normalizeSerial } from '../types';
 
 export function reconcile(panels: ScannedPanel[], dispatch: DispatchSheet | null): ReconciliationResult {
   if (!dispatch) {
     return { matchedIntact: [], matchedDamaged: [], missing: [], extra: [...panels] };
   }
 
-  const dispatchBySerial = new Map(dispatch.records.map((r) => [normalizeSerial(r.serial), r]));
+  const dispatchBySerial = buildDispatchIndex(dispatch);
   const scannedSerials = new Set(panels.map((p) => normalizeSerial(p.serial)));
 
   const matchedIntact: ScannedPanel[] = [];

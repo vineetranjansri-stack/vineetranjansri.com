@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import Scanner from './Scanner';
-import { DEFECT_TYPES, normalizeSerial, type ScannedPanel } from '../types';
+import { buildDispatchIndex, normalizeSerial, DEFECT_TYPES, type DispatchSheet, type ScannedPanel } from '../types';
 import { compressImage } from '../lib/image';
 
 interface ScanTabProps {
   panels: ScannedPanel[];
+  dispatch: DispatchSheet | null;
   onAddPanel: (panel: ScannedPanel) => void;
   onUpdatePanel: (id: string, updates: Partial<ScannedPanel>) => void;
   onDeletePanel: (id: string) => void;
@@ -16,7 +17,7 @@ function newId(): string {
     : `panel-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-export default function ScanTab({ panels, onAddPanel, onUpdatePanel, onDeletePanel }: ScanTabProps) {
+export default function ScanTab({ panels, dispatch, onAddPanel, onUpdatePanel, onDeletePanel }: ScanTabProps) {
   const [pendingSerial, setPendingSerial] = useState<string | null>(null);
   const [duplicateOf, setDuplicateOf] = useState<ScannedPanel | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -32,6 +33,12 @@ export default function ScanTab({ panels, onAddPanel, onUpdatePanel, onDeletePan
     for (const p of panels) map.set(normalizeSerial(p.serial), p);
     return map;
   }, [panels]);
+
+  const dispatchIndex = useMemo(() => buildDispatchIndex(dispatch), [dispatch]);
+  const dispatchMatch = pendingSerial && dispatch ? dispatchIndex.get(normalizeSerial(pendingSerial)) : undefined;
+  const dispatchDetailEntries = dispatchMatch
+    ? Object.entries(dispatchMatch.row).filter(([key, value]) => key !== dispatch?.serialColumn && value)
+    : [];
 
   const recent = panels.slice(-6).reverse();
 
@@ -169,6 +176,22 @@ export default function ScanTab({ panels, onAddPanel, onUpdatePanel, onDeletePan
           <p className="pending-serial">
             {editingId ? 'Editing' : 'Classify'}: <strong>{pendingSerial}</strong>
           </p>
+          {dispatch && (
+            dispatchMatch ? (
+              dispatchDetailEntries.length > 0 && (
+                <ul className="kv-list dispatch-match">
+                  {dispatchDetailEntries.map(([key, value]) => (
+                    <li key={key}>
+                      <span>{key}</span>
+                      <span>{value}</span>
+                    </li>
+                  ))}
+                </ul>
+              )
+            ) : (
+              <p className="scanner-error">Not found in the loaded dispatch sheet — check this is the right consignment.</p>
+            )
+          )}
           {!showDefectForm ? (
             <div className="btn-row">
               <button type="button" className="btn btn-success" onClick={saveIntact}>

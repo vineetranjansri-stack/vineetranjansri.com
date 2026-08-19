@@ -51,6 +51,7 @@ export default function SummaryTab({ sessionName, panels, dispatch }: SummaryTab
       matchedDamaged: dispatch ? result.matchedDamaged : panels.filter((p) => p.status === 'damaged'),
       extra: result.extra,
       missing: result.missing,
+      dispatch,
     });
   }
 

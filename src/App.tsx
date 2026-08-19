@@ -126,12 +126,19 @@ export default function App() {
 
       <main className="tab-content">
         {tab === 'scan' && (
-          <ScanTab panels={session.panels} onAddPanel={addPanel} onUpdatePanel={updatePanel} onDeletePanel={deletePanel} />
+          <ScanTab
+            panels={session.panels}
+            dispatch={session.dispatch}
+            onAddPanel={addPanel}
+            onUpdatePanel={updatePanel}
+            onDeletePanel={deletePanel}
+          />
         )}
         {tab === 'inventory' && (
           <InventoryTab
             panels={session.panels}
             sessionName={session.name}
+            dispatch={session.dispatch}
             onUpdatePanel={updatePanel}
             onDeletePanel={deletePanel}
           />
