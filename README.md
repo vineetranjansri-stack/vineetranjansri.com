@@ -1,0 +1,120 @@
+# Solar Panel Inventory & Reconciliation
+
+A browser-based tool for bulk-counting solar panels on arrival, logging damaged units,
+and reconciling the count against the supplier's dispatch sheet — with Excel exports at
+every step. Runs entirely in the browser: no backend, no database, no install beyond a
+one-time `npm install`.
+
+## Workflow
+
+1. **Start a session** — name the batch/consignment (e.g. `PO-4821 – Container 2`).
+2. **Scan panels** (Scan tab) — scan each panel's serial number barcode/QR code, then
+   mark it **Intact** or **Damaged**. Damaged panels require a defect type (crack, glass
+   breakage, frame damage, hot spot, junction box damage, backsheet damage, scratch,
+   delamination, other), optional notes, and an optional **photo** (camera capture or
+   file upload — evidence of the defect, attached to that panel's record). Re-scanning a
+   serial already logged shows a warning so you can update or ignore it, instead of
+   silently double-counting.
+3. **Review the inventory** (Inventory tab) — search/filter all scanned panels, edit or
+   delete a bad entry (including replacing/removing its photo), tap a damaged panel's
+   thumbnail to view the full-size photo, and export the **Intact** or **Damaged**
+   panels as standalone `.xlsx` sheets (with serial numbers, status, defect details, and
+   timestamps).
+4. **Upload the supplier dispatch/loading sheet** (Dispatch & Reconciliation tab) —
+   upload the supplier's `.xlsx`/`.csv`, pick which column holds the serial number
+   (auto-guessed from the header), and the app reconciles it against what was scanned:
+   - **Matched Intact** / **Matched Damaged** — dispatched and accounted for
+   - **Missing** — dispatched per the supplier sheet but never scanned (lost/short-shipped)
+   - **Extra** — scanned but not on the dispatch sheet (miscount or wrong consignment)
+
+   Once a sheet is loaded, its other columns (model, wattage, box number — whatever the
+   supplier included) follow the serial number everywhere: live under the Scan tab the
+   moment a panel is scanned (with an immediate "not found in dispatch sheet" warning if
+   it doesn't match — catches a wrong-consignment scan on the spot), as an expandable
+   "Dispatch Details" row per panel in the Inventory tab, and merged into the exported
+   Intact/Damaged/Extra `.xlsx` sheets.
+5. **Summary report** (Summary tab) — totals, damage rate, defect-type breakdown, and a
+   one-click **Export Full Report (.xlsx)** with Summary / Intact / Damaged /
+   Extra / Missing as separate sheets in one workbook.
+
+The session (scanned panels + loaded dispatch sheet) is auto-saved to the browser's
+local storage as you go, so an accidental page refresh doesn't lose the count. Use
+**End Session** to clear it and start a fresh one (export your reports first).
+
+## Installing on a phone/tablet home screen
+
+The app is an installable PWA — no app store needed. Open the deployed URL in the
+phone/tablet's browser, then:
+- **Android (Chrome)**: menu → "Add to Home screen" / "Install app".
+- **iOS (Safari)**: Share button → "Add to Home Screen".
+
+It then opens full-screen with its own icon, and the app shell (not your scanned data)
+is cached for offline use.
+
+## Moving a session between devices
+
+There's no login/account system — this stays fully local and free, with no backend.
+Instead, use **Export Session** (in the header while a session is active) to download
+the current session (scanned panels, photos, and loaded dispatch sheet) as a `.json`
+backup file. Send that file to another device (AirDrop, email, cloud drive, USB) and use
+**Import Session** — available on the start screen, or in the header of an active
+session — to load it there and keep working. Importing replaces whatever session is
+currently on that device, so export first if you need to keep it.
+
+## How counting is carried out
+
+Three scanning methods are supported side by side in the Scan tab — pick whichever fits
+the floor:
+
+- **Bluetooth / USB scanner gun** — pair the handheld scanner in the device's Bluetooth
+  settings first (it connects as a wireless keyboard, not through the app itself), then
+  tap the "Scan gun input" box once so it's focused. Each trigger pull types the code
+  and submits it automatically — no "Add" click needed. This is the recommended method
+  for continuous high-volume counting: faster and more reliable than camera scanning,
+  and it's what the app auto-focuses and re-focuses after every scan is classified so
+  the gun keeps working hands-free. The same box also accepts hand-typed serials or a
+  paste. Browsers have no API to report Bluetooth HID pairing/connection status, so
+  there's intentionally no "connected" indicator — if scans stop registering, it almost
+  always means the box lost focus (re-tap it).
+- **Phone/tablet camera** — tap "Start Camera Scan" to scan a panel's barcode or QR
+  code directly with the device camera (supports Code128, EAN-13/8, Code39, UPC-A/E,
+  ITF, Codabar, and QR). No extra hardware needed; a fallback when no scanner gun is on
+  hand.
+- **Upload photo(s) of a barcode** — already have photos where the panel's barcode/QR
+  label is visible (taken earlier, sent by someone else, etc.)? Upload one or several at
+  once under "Upload Photo(s) of Barcode" and each is decoded from the still image and
+  queued — classify the current one Intact/Damaged and the next queued photo's result
+  comes up automatically, same flow as a live scan. Photos a barcode can't be read from
+  are listed so you can enter those serials manually instead.
+
+All three feed the same duplicate-check and classify (Intact/Damaged) flow.
+
+## Getting started
+
+```bash
+npm install
+npm run dev       # local dev server
+npm run build      # production build (dist/)
+```
+
+Open the dev server URL on the phone/tablet that will do the scanning (camera access
+requires HTTPS or `localhost` in most browsers).
+
+## Notes
+
+- Data storage is Excel-only by design — there is no server or database. Everything
+  lives in the browser session and is exported as `.xlsx` for handoff/archival.
+- Damage photos are resized/compressed client-side (max 900px, JPEG) before being
+  stored, to keep bulk sessions with hundreds of photos from bloating the browser's
+  local storage. Photos are **not** embedded into the exported `.xlsx` files — the free
+  `xlsx` library used here doesn't support embedding images — the exported sheets just
+  include a "Has Photo" Yes/No column. View or hand off photos from the app itself (the
+  Inventory tab's photo thumbnails) rather than expecting them inside the workbook.
+- The `xlsx` (SheetJS) npm package has known advisories (prototype pollution, ReDoS)
+  with no fix currently published to the npm registry; SheetJS's own patched builds are
+  distributed from `cdn.sheetjs.com` instead of npm. This environment's network policy
+  blocks that host, so the app ships with the npm-registry build. Since the app only
+  ever parses files the user selects themselves in their own browser (no server, no
+  untrusted network input), real-world exposure is low — but if you want the patched
+  build, run `npm install https://cdn.sheetjs.com/xlsx-<version>/xlsx-<version>.tgz`
+  from a network that allows it.
