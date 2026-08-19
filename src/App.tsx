@@ -4,6 +4,7 @@ import InventoryTab from './components/InventoryTab';
 import DispatchTab from './components/DispatchTab';
 import SummaryTab from './components/SummaryTab';
 import { clearSession, loadSession, saveSession } from './lib/storage';
+import { exportSessionFile, importSessionFile } from './lib/sessionTransfer';
 import { createEmptySession, type DispatchSheet, type ScannedPanel, type SessionState } from './types';
 
 type Tab = 'scan' | 'inventory' | 'dispatch' | 'summary';
@@ -20,6 +21,7 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [tab, setTab] = useState<Tab>('scan');
   const [newSessionName, setNewSessionName] = useState('');
+  const [importError, setImportError] = useState<string | null>(null);
 
   useEffect(() => {
     loadSession().then((s) => {
@@ -65,6 +67,21 @@ export default function App() {
     setSession((s) => (s ? { ...s, dispatch } : s));
   }
 
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (session && !confirm('Import will replace the current session on this device. Continue?')) return;
+    setImportError(null);
+    try {
+      const imported = await importSessionFile(file);
+      setSession(imported);
+      setTab('scan');
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Could not import that file.');
+    }
+  }
+
   if (!loaded) {
     return (
       <div className="app-loading">
@@ -94,6 +111,11 @@ export default function App() {
           <button type="button" className="btn btn-primary" onClick={startSession}>
             Start Counting
           </button>
+
+          <div className="import-divider">or continue a session from another device</div>
+          <label htmlFor="import-session">Import session file (.json)</label>
+          <input id="import-session" type="file" accept="application/json" onChange={handleImportFile} />
+          {importError && <p className="scanner-error">{importError}</p>}
         </div>
       </div>
     );
@@ -106,10 +128,22 @@ export default function App() {
           <h1>{session.name}</h1>
           <p className="hint">Started {new Date(session.createdAt).toLocaleString()}</p>
         </div>
-        <button type="button" className="btn btn-outline" onClick={endSession}>
-          End Session
-        </button>
+        <div className="btn-row">
+          <button type="button" className="btn btn-outline" onClick={() => exportSessionFile(session)}>
+            Export Session
+          </button>
+          <label htmlFor="import-session-active" className="btn btn-outline file-btn">
+            Import Session
+            <input id="import-session-active" type="file" accept="application/json" onChange={handleImportFile} hidden />
+          </label>
+          <button type="button" className="btn btn-outline" onClick={endSession}>
+            End Session
+          </button>
+        </div>
       </header>
+      {importError && (
+        <p className="scanner-error import-error-banner">{importError}</p>
+      )}
 
       <nav className="tab-bar">
         {TABS.map((t) => (

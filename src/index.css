@@ -91,6 +91,28 @@ textarea {
   resize: vertical;
 }
 
+.import-divider {
+  margin: 1.25rem 0 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.file-btn {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  margin: 0;
+}
+
+.import-error-banner {
+  max-width: 960px;
+  margin: 0.5rem auto 0;
+  padding: 0 1rem;
+}
+
 .btn {
   border: none;
   border-radius: 8px;

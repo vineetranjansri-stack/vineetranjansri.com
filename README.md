@@ -41,6 +41,26 @@ The session (scanned panels + loaded dispatch sheet) is auto-saved to the browse
 local storage as you go, so an accidental page refresh doesn't lose the count. Use
 **End Session** to clear it and start a fresh one (export your reports first).
 
+## Installing on a phone/tablet home screen
+
+The app is an installable PWA — no app store needed. Open the deployed URL in the
+phone/tablet's browser, then:
+- **Android (Chrome)**: menu → "Add to Home screen" / "Install app".
+- **iOS (Safari)**: Share button → "Add to Home Screen".
+
+It then opens full-screen with its own icon, and the app shell (not your scanned data)
+is cached for offline use.
+
+## Moving a session between devices
+
+There's no login/account system — this stays fully local and free, with no backend.
+Instead, use **Export Session** (in the header while a session is active) to download
+the current session (scanned panels, photos, and loaded dispatch sheet) as a `.json`
+backup file. Send that file to another device (AirDrop, email, cloud drive, USB) and use
+**Import Session** — available on the start screen, or in the header of an active
+session — to load it there and keep working. Importing replaces whatever session is
+currently on that device, so export first if you need to keep it.
+
 ## How counting is carried out
 
 Two scanning methods are supported side by side in the Scan tab — pick whichever fits
