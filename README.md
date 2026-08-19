@@ -11,11 +11,15 @@ one-time `npm install`.
 2. **Scan panels** (Scan tab) — scan each panel's serial number barcode/QR code, then
    mark it **Intact** or **Damaged**. Damaged panels require a defect type (crack, glass
    breakage, frame damage, hot spot, junction box damage, backsheet damage, scratch,
-   delamination, other) and optional notes. Re-scanning a serial already logged shows a
-   warning so you can update or ignore it, instead of silently double-counting.
+   delamination, other), optional notes, and an optional **photo** (camera capture or
+   file upload — evidence of the defect, attached to that panel's record). Re-scanning a
+   serial already logged shows a warning so you can update or ignore it, instead of
+   silently double-counting.
 3. **Review the inventory** (Inventory tab) — search/filter all scanned panels, edit or
-   delete a bad entry, and export the **Intact** or **Damaged** panels as standalone
-   `.xlsx` sheets (with serial numbers, status, defect details, and timestamps).
+   delete a bad entry (including replacing/removing its photo), tap a damaged panel's
+   thumbnail to view the full-size photo, and export the **Intact** or **Damaged**
+   panels as standalone `.xlsx` sheets (with serial numbers, status, defect details, and
+   timestamps).
 4. **Upload the supplier dispatch sheet** (Dispatch & Reconciliation tab) — upload the
    supplier's `.xlsx`/`.csv`, pick which column holds the serial number (auto-guessed
    from the header), and the app reconciles it against what was scanned:
@@ -67,6 +71,12 @@ requires HTTPS or `localhost` in most browsers).
 
 - Data storage is Excel-only by design — there is no server or database. Everything
   lives in the browser session and is exported as `.xlsx` for handoff/archival.
+- Damage photos are resized/compressed client-side (max 900px, JPEG) before being
+  stored, to keep bulk sessions with hundreds of photos from bloating the browser's
+  local storage. Photos are **not** embedded into the exported `.xlsx` files — the free
+  `xlsx` library used here doesn't support embedding images — the exported sheets just
+  include a "Has Photo" Yes/No column. View or hand off photos from the app itself (the
+  Inventory tab's photo thumbnails) rather than expecting them inside the workbook.
 - The `xlsx` (SheetJS) npm package has known advisories (prototype pollution, ReDoS)
   with no fix currently published to the npm registry; SheetJS's own patched builds are
   distributed from `cdn.sheetjs.com` instead of npm. This environment's network policy

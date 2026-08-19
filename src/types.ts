@@ -20,6 +20,7 @@ export interface ScannedPanel {
   status: PanelStatus;
   defectType?: string;
   notes?: string;
+  photo?: string; // compressed data URL, damaged panels only
   scannedAt: string;
 }
 

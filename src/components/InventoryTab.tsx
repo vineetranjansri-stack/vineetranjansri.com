@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { DEFECT_TYPES, type ScannedPanel } from '../types';
 import { exportPanelsSheet } from '../lib/excel';
+import { compressImage } from '../lib/image';
 
 interface InventoryTabProps {
   panels: ScannedPanel[];
@@ -18,6 +19,9 @@ export default function InventoryTab({ panels, sessionName, onUpdatePanel, onDel
   const [editStatus, setEditStatus] = useState<'intact' | 'damaged'>('intact');
   const [editDefect, setEditDefect] = useState<string>(DEFECT_TYPES[0]);
   const [editNotes, setEditNotes] = useState('');
+  const [editPhoto, setEditPhoto] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     return panels
@@ -32,6 +36,7 @@ export default function InventoryTab({ panels, sessionName, onUpdatePanel, onDel
     setEditStatus(p.status);
     setEditDefect(p.defectType ?? DEFECT_TYPES[0]);
     setEditNotes(p.notes ?? '');
+    setEditPhoto(p.photo ?? null);
   }
 
   function saveEdit(id: string) {
@@ -39,8 +44,23 @@ export default function InventoryTab({ panels, sessionName, onUpdatePanel, onDel
       status: editStatus,
       defectType: editStatus === 'damaged' ? editDefect : undefined,
       notes: editStatus === 'damaged' ? editNotes.trim() || undefined : undefined,
+      photo: editStatus === 'damaged' ? editPhoto ?? undefined : undefined,
     });
     setEditingId(null);
+  }
+
+  async function handleEditPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setPhotoBusy(true);
+    try {
+      setEditPhoto(await compressImage(file));
+    } catch {
+      // photo is optional — silently skip on failure
+    } finally {
+      setPhotoBusy(false);
+    }
   }
 
   return (
@@ -83,6 +103,7 @@ export default function InventoryTab({ panels, sessionName, onUpdatePanel, onDel
               <th>Serial Number</th>
               <th>Status</th>
               <th>Defect / Notes</th>
+              <th>Photo</th>
               <th>Scanned At</th>
               <th>Actions</th>
             </tr>
@@ -131,6 +152,30 @@ export default function InventoryTab({ panels, sessionName, onUpdatePanel, onDel
                     '—'
                   )}
                 </td>
+                <td>
+                  {editingId === p.id ? (
+                    editStatus === 'damaged' ? (
+                      editPhoto ? (
+                        <div className="photo-preview">
+                          <img src={editPhoto} alt="Damage preview" />
+                          <button type="button" className="btn btn-outline btn-sm" onClick={() => setEditPhoto(null)}>
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <input type="file" accept="image/*" capture="environment" onChange={handleEditPhoto} disabled={photoBusy} />
+                      )
+                    ) : (
+                      '—'
+                    )
+                  ) : p.photo ? (
+                    <button type="button" className="thumb-btn" onClick={() => setLightboxSrc(p.photo!)}>
+                      <img className="thumb" src={p.photo} alt="Damage" />
+                    </button>
+                  ) : (
+                    '—'
+                  )}
+                </td>
                 <td>{new Date(p.scannedAt).toLocaleString()}</td>
                 <td>
                   {editingId === p.id ? (
@@ -157,7 +202,7 @@ export default function InventoryTab({ panels, sessionName, onUpdatePanel, onDel
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="empty-row">
+                <td colSpan={7} className="empty-row">
                   No panels match this view yet.
                 </td>
               </tr>
@@ -165,6 +210,12 @@ export default function InventoryTab({ panels, sessionName, onUpdatePanel, onDel
           </tbody>
         </table>
       </div>
+
+      {lightboxSrc && (
+        <div className="lightbox" onClick={() => setLightboxSrc(null)}>
+          <img src={lightboxSrc} alt="Damage full size" />
+        </div>
+      )}
     </div>
   );
 }

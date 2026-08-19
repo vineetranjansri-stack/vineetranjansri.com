@@ -44,6 +44,7 @@ export function panelRows(panels: ScannedPanel[]): Record<string, unknown>[] {
     Status: p.status === 'intact' ? 'Intact' : 'Damaged',
     'Defect Type': p.defectType ?? '',
     Notes: p.notes ?? '',
+    'Has Photo': p.photo ? 'Yes' : 'No',
     'Scanned At': fmtTime(p.scannedAt),
   }));
 }

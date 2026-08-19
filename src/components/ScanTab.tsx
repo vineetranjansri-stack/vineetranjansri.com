@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import Scanner from './Scanner';
 import { DEFECT_TYPES, normalizeSerial, type ScannedPanel } from '../types';
+import { compressImage } from '../lib/image';
 
 interface ScanTabProps {
   panels: ScannedPanel[];
@@ -22,6 +23,8 @@ export default function ScanTab({ panels, onAddPanel, onUpdatePanel, onDeletePan
   const [showDefectForm, setShowDefectForm] = useState(false);
   const [defectType, setDefectType] = useState<string>(DEFECT_TYPES[0]);
   const [notes, setNotes] = useState('');
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [lastSavedId, setLastSavedId] = useState<string | null>(null);
 
   const bySerial = useMemo(() => {
@@ -38,6 +41,7 @@ export default function ScanTab({ panels, onAddPanel, onUpdatePanel, onDeletePan
     setShowDefectForm(false);
     setDefectType(DEFECT_TYPES[0]);
     setNotes('');
+    setPhoto(null);
     setEditingId(null);
     if (existing) {
       setDuplicateOf(existing);
@@ -51,6 +55,21 @@ export default function ScanTab({ panels, onAddPanel, onUpdatePanel, onDeletePan
     setDuplicateOf(null);
     setEditingId(null);
     setShowDefectForm(false);
+    setPhoto(null);
+  }
+
+  async function handlePhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setPhotoBusy(true);
+    try {
+      setPhoto(await compressImage(file));
+    } catch {
+      // photo is optional — silently skip on failure
+    } finally {
+      setPhotoBusy(false);
+    }
   }
 
   function saveIntact() {
@@ -70,6 +89,7 @@ export default function ScanTab({ panels, onAddPanel, onUpdatePanel, onDeletePan
         status,
         defectType: status === 'damaged' ? defectType : undefined,
         notes: status === 'damaged' ? notes.trim() || undefined : undefined,
+        photo: status === 'damaged' ? photo ?? undefined : undefined,
       });
       setLastSavedId(editingId);
     } else {
@@ -79,6 +99,7 @@ export default function ScanTab({ panels, onAddPanel, onUpdatePanel, onDeletePan
         status,
         defectType: status === 'damaged' ? defectType : undefined,
         notes: status === 'damaged' ? notes.trim() || undefined : undefined,
+        photo: status === 'damaged' ? photo ?? undefined : undefined,
         scannedAt: new Date().toISOString(),
       };
       onAddPanel(panel);
@@ -92,6 +113,7 @@ export default function ScanTab({ panels, onAddPanel, onUpdatePanel, onDeletePan
     setEditingId(duplicateOf.id);
     setDefectType(duplicateOf.defectType ?? DEFECT_TYPES[0]);
     setNotes(duplicateOf.notes ?? '');
+    setPhoto(duplicateOf.photo ?? null);
     setShowDefectForm(duplicateOf.status === 'damaged');
     setDuplicateOf(null);
   }
@@ -177,6 +199,25 @@ export default function ScanTab({ panels, onAddPanel, onUpdatePanel, onDeletePan
                 placeholder="e.g. crack near top-left corner, 5cm"
                 rows={2}
               />
+              <label htmlFor="defect-photo">Photo of damage (optional)</label>
+              {photo ? (
+                <div className="photo-preview">
+                  <img src={photo} alt="Damage preview" />
+                  <button type="button" className="btn btn-outline btn-sm" onClick={() => setPhoto(null)}>
+                    Remove photo
+                  </button>
+                </div>
+              ) : (
+                <input
+                  id="defect-photo"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePhotoSelected}
+                  disabled={photoBusy}
+                />
+              )}
+              {photoBusy && <p className="hint">Processing photo…</p>}
               <div className="btn-row">
                 <button type="button" className="btn btn-danger" onClick={saveDamaged}>
                   Save Damaged Panel
@@ -205,6 +246,7 @@ export default function ScanTab({ panels, onAddPanel, onUpdatePanel, onDeletePan
           <ul>
             {recent.map((p) => (
               <li key={p.id} className={p.status === 'damaged' ? 'row-damaged' : 'row-intact'}>
+                {p.photo && <img className="thumb" src={p.photo} alt="" />}
                 <span className="serial">{p.serial}</span>
                 <span className="status">{p.status === 'intact' ? 'Intact' : `Damaged (${p.defectType})`}</span>
                 <span className="time">{new Date(p.scannedAt).toLocaleTimeString()}</span>
