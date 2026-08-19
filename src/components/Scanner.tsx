@@ -26,11 +26,27 @@ export default function Scanner({ onDecode, disabled }: ScannerProps) {
 
   // Keep the scanner-gun input focused and ready whenever it's usable — a Bluetooth/USB
   // scanner gun pairs as a keyboard, so it can only "type" a scan into whichever element
-  // currently has focus. This re-focuses on mount and every time a pending scan is resolved.
+  // currently has focus. Retries for ~300ms because tapping the Intact/Damaged button that
+  // triggers this can itself grab focus a beat later on some mobile browsers, silently
+  // swallowing the next trigger pull if we only tried once.
   useEffect(() => {
-    if (!disabled) {
-      manualInputRef.current?.focus();
-    }
+    if (disabled) return;
+    let cancelled = false;
+    let attempts = 0;
+    const tryFocus = () => {
+      if (cancelled) return;
+      const el = manualInputRef.current;
+      if (!el) return;
+      if (document.activeElement !== el) el.focus();
+      attempts += 1;
+      if (attempts < 6 && document.activeElement !== el) {
+        setTimeout(tryFocus, 60);
+      }
+    };
+    tryFocus();
+    return () => {
+      cancelled = true;
+    };
   }, [disabled]);
 
   async function startCamera() {

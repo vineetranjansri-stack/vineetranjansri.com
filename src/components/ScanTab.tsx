@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Scanner from './Scanner';
 import { buildDispatchIndex, normalizeSerial, DEFECT_TYPES, type DispatchSheet, type ScannedPanel } from '../types';
 import { compressImage } from '../lib/image';
@@ -27,6 +27,16 @@ export default function ScanTab({ panels, dispatch, onAddPanel, onUpdatePanel, o
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [lastSavedId, setLastSavedId] = useState<string | null>(null);
+  const pendingCardRef = useRef<HTMLDivElement>(null);
+
+  // A scan can land below the fold on a small phone screen once the scanner-gun and
+  // camera cards above take up space — scroll the result into view so it's never
+  // mistaken for "nothing happened."
+  useEffect(() => {
+    if (pendingSerial) {
+      pendingCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [pendingSerial]);
 
   const bySerial = useMemo(() => {
     const map = new Map<string, ScannedPanel>();
@@ -153,6 +163,7 @@ export default function ScanTab({ panels, dispatch, onAddPanel, onUpdatePanel, o
 
       <Scanner onDecode={handleDecode} disabled={pendingSerial !== null && !duplicateOf} />
 
+      <div ref={pendingCardRef}>
       {duplicateOf && (
         <div className="card warning-card">
           <p>
@@ -253,6 +264,7 @@ export default function ScanTab({ panels, dispatch, onAddPanel, onUpdatePanel, o
           )}
         </div>
       )}
+      </div>
 
       {lastSavedId && !pendingSerial && (
         <div className="card undo-card">
